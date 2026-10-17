@@ -37,7 +37,7 @@ def test_build_dtm_tool_known_answer_4():
 
     # 1. Assert feature names and dimensions
     expected_vocab = ['alpha', 'always', 'beta', 'delta', 'gamma']
-    assert result["feature_names"] == expected_vocab
+    assert result["n_terms"] == len(expected_vocab)
     assert result["n_documents"] == 8
     assert result["n_terms"] == 5
 
@@ -109,7 +109,8 @@ def test_term_frequency_tool_known_answer_14():
         "delta": 4,
         "gamma": 7,
     }
-    assert result["term_frequencies"] == expected_freqs
+    assert result["top_terms"] == expected_freqs
+    assert session.artifacts["term_frequencies"] == expected_freqs
 
 
 def test_dtm_heatmap_tool_known_answer_21():

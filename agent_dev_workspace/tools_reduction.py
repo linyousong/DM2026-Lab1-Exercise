@@ -168,10 +168,19 @@ def make_tools(session):
             "result_id": session.next_result_id("reduce_dimensions"),
             "status": "success",
             "method": method,
-            "coordinates": coords_rounded,
             "explained_variance_ratio": explained_variance_ratio,
             "n_documents": n_samples,
         }
+
+        # Only small datasets return coordinates in the summary; larger ones
+        # keep them in session.artifacts so the LLM context stays small.
+        if n_samples <= 50:
+            summary["coordinates"] = coords_rounded
+        else:
+            summary["coordinates_note"] = (
+                f"{n_samples} documents: coordinates not shown, "
+                f"stored in session.artifacts['reduced_{method}']"
+            )
 
         session.store_result(
             "reduce_dimensions_tool",

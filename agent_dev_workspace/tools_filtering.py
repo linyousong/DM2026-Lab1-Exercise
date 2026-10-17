@@ -31,11 +31,8 @@ def make_tools(session):
                 - status (str): "success" or "error".
                 - threshold (float): Evaluated variance threshold.
                 - total_terms (int): Initial vocabulary size.
-                - kept_terms (List[str]): List of term names meeting or exceeding threshold.
-                - removed_terms (List[str]): List of term names below threshold.
                 - kept_count (int): Number of kept features.
                 - removed_count (int): Number of removed features.
-                - variances (Dict[str, float]): Mapping of term names to variance values.
         """
         if session.feature_matrix is None or session.feature_names is None:
             summary = {
@@ -44,11 +41,8 @@ def make_tools(session):
                 "error": "No document-term matrix found in session. Call build_dtm_tool first.",
                 "threshold": threshold,
                 "total_terms": 0,
-                "kept_terms": [],
-                "removed_terms": [],
                 "kept_count": 0,
                 "removed_count": 0,
-                "variances": {},
             }
             session.store_result("variance_filter_tool", {"threshold": threshold}, summary)
             return summary
@@ -77,11 +71,8 @@ def make_tools(session):
             "status": "success",
             "threshold": threshold,
             "total_terms": len(feature_names),
-            "kept_terms": kept_terms,
-            "removed_terms": removed_terms,
             "kept_count": len(kept_terms),
             "removed_count": len(removed_terms),
-            "variances": var_dict,
         }
 
         # Store result with full_report for visualize_result_tool compatibility
@@ -110,9 +101,8 @@ def make_tools(session):
                 "target_class": target_class,
                 "threshold": threshold,
                 "total_terms": 0,
-                "kept_terms": [],
-                "removed_terms": [],
-                metric_name: {},
+                "kept_count": 0,
+                "removed_count": 0,
             }
             session.store_result(f"{tool_prefix}_tool", {"target_class": target_class, "threshold": threshold}, summary)
             return summary
@@ -133,9 +123,8 @@ def make_tools(session):
                 "target_class": target_class,
                 "threshold": threshold,
                 "total_terms": 0,
-                "kept_terms": [],
-                "removed_terms": [],
-                metric_name: {},
+                "kept_count": 0,
+                "removed_count": 0,
             }
             session.store_result(f"{tool_prefix}_tool", {"target_class": target_class, "threshold": threshold}, summary)
             return summary
@@ -149,9 +138,8 @@ def make_tools(session):
                 "target_class": target_class,
                 "threshold": threshold,
                 "total_terms": 0,
-                "kept_terms": [],
-                "removed_terms": [],
-                metric_name: {},
+                "kept_count": 0,
+                "removed_count": 0,
             }
             session.store_result(f"{tool_prefix}_tool", {"target_class": target_class, "threshold": threshold}, summary)
             return summary
@@ -185,9 +173,8 @@ def make_tools(session):
             "target_class": target_class,
             "threshold": threshold,
             "total_terms": len(session.feature_names),
-            "kept_terms": kept_terms,
-            "removed_terms": removed_terms,
-            metric_name: correlations,
+            "kept_count": len(kept_terms),
+            "removed_count": len(removed_terms),
         }
 
         session.store_result(
@@ -222,9 +209,8 @@ def make_tools(session):
                 - target_class (str): Target category evaluated.
                 - threshold (float): Minimum correlation threshold.
                 - total_terms (int): Total unique vocabulary size evaluated.
-                - kept_terms (List[str]): List of term names with pearson_r >= threshold.
-                - removed_terms (List[str]): List of term names with pearson_r < threshold.
-                - pearson_r (Dict[str, float]): Dict mapping term names to Pearson correlation r coefficients.
+                - kept_count (int): Number of kept features with pearson_r >= threshold.
+                - removed_count (int): Number of removed features with pearson_r < threshold.
         """
         return _run_correlation_filter("pearson_filter", "pearson_r", pearsonr, target_class, threshold)
 
@@ -251,9 +237,8 @@ def make_tools(session):
                 - target_class (str): Target category evaluated.
                 - threshold (float): Minimum correlation threshold.
                 - total_terms (int): Total unique vocabulary size evaluated.
-                - kept_terms (List[str]): List of term names with spearman_r >= threshold.
-                - removed_terms (List[str]): List of term names with spearman_r < threshold.
-                - spearman_r (Dict[str, float]): Dict mapping term names to Spearman correlation r coefficients.
+                - kept_count (int): Number of kept features with spearman_r >= threshold.
+                - removed_count (int): Number of removed features with spearman_r < threshold.
         """
         return _run_correlation_filter("spearman_filter", "spearman_r", spearmanr, target_class, threshold)
 

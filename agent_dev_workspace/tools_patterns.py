@@ -258,13 +258,21 @@ def make_tools(session):
         if len(formatted_patterns) == 0:
             note = f"No patterns found by algorithm '{algorithm}' with current parameters."
 
+        # Show only the 20 highest-support patterns in the summary (the LLM sees this);
+        # the complete list stays in session.artifacts.
+        top_patterns = sorted(
+            formatted_patterns,
+            key=lambda p: p.get("support", 0),
+            reverse=True,
+        )[:20]
+
         summary = {
             "result_id": result_id,
             "status": "success",
             "category_name": category_name,
             "filtering_method": filtering_method,
             "algorithm": algorithm,
-            "patterns": formatted_patterns,
+            "patterns": top_patterns,
             "n_patterns": len(formatted_patterns),
             "note": note,
         }

@@ -17,9 +17,9 @@ def test_variance_filter_tool_known_answer_5():
       - delta: 0.25
       - gamma: 1.109375
     At threshold=0.15:
-      - kept_terms: ['alpha', 'beta', 'delta', 'gamma']
-      - removed_terms: ['always']
-    Also verifies full_report formatting (1st col: term, 2nd col: variance, sorted descending).
+      - kept_count: 4
+      - removed_count: 1
+    Verifies full_report formatting (1st col: term, 2nd col: variance, sorted descending) and per-term scores.
     """
     session = SessionState()
 
@@ -47,31 +47,34 @@ def test_variance_filter_tool_known_answer_5():
 
     assert result["status"] == "success"
     assert result["total_terms"] == 5
-
-    # Verify per-term variances against Known Answer #5
-    vars_dict = result["variances"]
-    assert vars_dict["alpha"] == pytest.approx(1.1875, abs=1e-4)
-    assert vars_dict["always"] == pytest.approx(0.109375, abs=1e-4)
-    assert vars_dict["beta"] == pytest.approx(0.234375, abs=1e-4)
-    assert vars_dict["delta"] == pytest.approx(0.25, abs=1e-4)
-    assert vars_dict["gamma"] == pytest.approx(1.109375, abs=1e-4)
-
-    # Verify kept/removed terms at threshold=0.15
-    assert set(result["kept_terms"]) == {"alpha", "beta", "delta", "gamma"}
-    assert result["removed_terms"] == ["always"]
     assert result["kept_count"] == 4
     assert result["removed_count"] == 1
 
-    # Verify full_report stored in results_store for visualize_result_tool compatibility
+    # Verify full_report stored in results_store for visualize_result_tool compatibility and per-term scores
     stored_result = session.results_store.get(result["result_id"])
     assert stored_result is not None
     full_report = stored_result.get("full_report")
     assert full_report is not None
     assert full_report.columns[0] == "term"
     assert full_report.columns[1] == "variance"
+
     # Verify sorted descending by variance
     variances_list = full_report["variance"].tolist()
     assert variances_list == sorted(variances_list, reverse=True)
+
+    # Verify per-term variances against Known Answer #5 from full_report
+    vars_dict = dict(zip(full_report["term"], full_report["variance"]))
+    assert vars_dict["alpha"] == pytest.approx(1.1875, abs=1e-4)
+    assert vars_dict["always"] == pytest.approx(0.109375, abs=1e-4)
+    assert vars_dict["beta"] == pytest.approx(0.234375, abs=1e-4)
+    assert vars_dict["delta"] == pytest.approx(0.25, abs=1e-4)
+    assert vars_dict["gamma"] == pytest.approx(1.109375, abs=1e-4)
+
+    # Verify kept/removed terms at threshold=0.15 from full_report
+    kept_terms = set(full_report[full_report["variance"] >= 0.15]["term"])
+    removed_terms = list(full_report[full_report["variance"] < 0.15]["term"])
+    assert kept_terms == {"alpha", "beta", "delta", "gamma"}
+    assert removed_terms == ["always"]
 
 
 def test_pearson_filter_tool_known_answer_6():
@@ -111,19 +114,10 @@ def test_pearson_filter_tool_known_answer_6():
     assert result["status"] == "success"
     assert result["target_class"] == "catB"
     assert result["total_terms"] == 5
+    assert result["kept_count"] == 2
+    assert result["removed_count"] == 3
 
-    # Verify Pearson correlations against Known Answer #6
-    p_dict = result["pearson_r"]
-    assert p_dict["alpha"] == pytest.approx(-0.6882, abs=1e-3)
-    assert p_dict["always"] == pytest.approx(0.3780, abs=1e-3)
-    assert p_dict["beta"] == pytest.approx(-0.7746, abs=1e-3)
-    assert p_dict["delta"] == pytest.approx(1.0000, abs=1e-3)
-    assert p_dict["gamma"] == pytest.approx(0.8307, abs=1e-3)
-
-    # Verify kept terms at threshold=0.5 (delta and gamma have r >= 0.5)
-    assert set(result["kept_terms"]) == {"delta", "gamma"}
-
-    # Verify full_report column structure and sorting
+    # Verify full_report column structure, sorting, and correlation coefficients
     stored_result = session.results_store.get(result["result_id"])
     assert stored_result is not None
     full_report = stored_result.get("full_report")
@@ -132,6 +126,18 @@ def test_pearson_filter_tool_known_answer_6():
     assert full_report.columns[1] == "pearson_r"
     r_list = full_report["pearson_r"].tolist()
     assert r_list == sorted(r_list, reverse=True)
+
+    # Verify Pearson correlations against Known Answer #6 from full_report
+    p_dict = dict(zip(full_report["term"], full_report["pearson_r"]))
+    assert p_dict["alpha"] == pytest.approx(-0.6882, abs=1e-3)
+    assert p_dict["always"] == pytest.approx(0.3780, abs=1e-3)
+    assert p_dict["beta"] == pytest.approx(-0.7746, abs=1e-3)
+    assert p_dict["delta"] == pytest.approx(1.0000, abs=1e-3)
+    assert p_dict["gamma"] == pytest.approx(0.8307, abs=1e-3)
+
+    # Verify kept terms at threshold=0.5 from full_report
+    kept_terms = set(full_report[full_report["pearson_r"] >= 0.5]["term"])
+    assert kept_terms == {"delta", "gamma"}
 
 
 def test_spearman_filter_tool_known_answer_6():
@@ -171,19 +177,10 @@ def test_spearman_filter_tool_known_answer_6():
     assert result["status"] == "success"
     assert result["target_class"] == "catB"
     assert result["total_terms"] == 5
+    assert result["kept_count"] == 2
+    assert result["removed_count"] == 3
 
-    # Verify Spearman correlations against Known Answer #6
-    s_dict = result["spearman_r"]
-    assert s_dict["alpha"] == pytest.approx(-0.7500, abs=1e-3)
-    assert s_dict["always"] == pytest.approx(0.3780, abs=1e-3)
-    assert s_dict["beta"] == pytest.approx(-0.7746, abs=1e-3)
-    assert s_dict["delta"] == pytest.approx(1.0000, abs=1e-3)
-    assert s_dict["gamma"] == pytest.approx(0.9363, abs=1e-3)
-
-    # Verify kept terms at threshold=0.5 (delta and gamma have r >= 0.5)
-    assert set(result["kept_terms"]) == {"delta", "gamma"}
-
-    # Verify full_report column structure and sorting
+    # Verify full_report column structure, sorting, and correlation coefficients
     stored_result = session.results_store.get(result["result_id"])
     assert stored_result is not None
     full_report = stored_result.get("full_report")
@@ -192,3 +189,15 @@ def test_spearman_filter_tool_known_answer_6():
     assert full_report.columns[1] == "spearman_r"
     r_list = full_report["spearman_r"].tolist()
     assert r_list == sorted(r_list, reverse=True)
+
+    # Verify Spearman correlations against Known Answer #6 from full_report
+    s_dict = dict(zip(full_report["term"], full_report["spearman_r"]))
+    assert s_dict["alpha"] == pytest.approx(-0.7500, abs=1e-3)
+    assert s_dict["always"] == pytest.approx(0.3780, abs=1e-3)
+    assert s_dict["beta"] == pytest.approx(-0.7746, abs=1e-3)
+    assert s_dict["delta"] == pytest.approx(1.0000, abs=1e-3)
+    assert s_dict["gamma"] == pytest.approx(0.9363, abs=1e-3)
+
+    # Verify kept terms at threshold=0.5 from full_report
+    kept_terms = set(full_report[full_report["spearman_r"] >= 0.5]["term"])
+    assert kept_terms == {"delta", "gamma"}

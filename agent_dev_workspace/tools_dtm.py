@@ -92,7 +92,6 @@ def make_tools(session):
             "non_zero": non_zero,
             "total_elements": total_elements,
             "sparsity_pct": round(sparsity_pct, 4),
-            "feature_names": feature_names,
         }
 
         session.store_result(
@@ -114,14 +113,16 @@ def make_tools(session):
         Aggregates global term frequencies across all documents in session.feature_matrix.
 
         Sums occurrences of each term across all rows in the global document-term matrix (session.feature_matrix).
-        Returns a dictionary mapping each term name to its total frequency count across the entire dataset.
+        The summary returns only the 20 most frequent terms with their total counts, plus overall totals,
+        so the result stays small enough for the model context. The complete frequency table is stored in
+        full_report (term, frequency; sorted descending) and in session.artifacts["term_frequencies"].
         If build_dtm_tool has not been run, returns a structured error summary dict instead of crashing.
 
         Returns:
             dict: A JSON-serializable result summary containing:
                 - result_id (str): Unique execution identifier (e.g. "term_frequency_1").
                 - status (str): "success" or "error".
-                - term_frequencies (Dict[str, int]): Dict mapping term names to total occurrence counts.
+                - top_terms (Dict[str, int]): The 20 most frequent terms mapped to their total occurrence counts.
                 - total_terms (int): Total unique vocabulary size.
                 - total_word_occurrences (int): Sum of all term frequencies across all documents.
         """
@@ -130,7 +131,7 @@ def make_tools(session):
                 "result_id": session.next_result_id("term_frequency"),
                 "status": "error",
                 "error": "No document-term matrix found in session. Call build_dtm_tool first.",
-                "term_frequencies": {},
+                "top_terms": {},
                 "total_terms": 0,
                 "total_word_occurrences": 0,
             }
@@ -144,13 +145,17 @@ def make_tools(session):
             for term, count in zip(session.feature_names, col_sums)
         }
 
-        # Also store in session artifacts for downstream tools/analysis
+        # Full table stays in session artifacts (not sent to the LLM)
         session.artifacts["term_frequencies"] = term_frequencies
+
+        # Only the 20 most frequent terms go into the summary
+        sorted_items = sorted(term_frequencies.items(), key=lambda kv: kv[1], reverse=True)
+        top_terms = {term: count for term, count in sorted_items[:20]}
 
         summary = {
             "result_id": session.next_result_id("term_frequency"),
             "status": "success",
-            "term_frequencies": term_frequencies,
+            "top_terms": top_terms,
             "total_terms": len(term_frequencies),
             "total_word_occurrences": int(col_sums.sum()),
         }
