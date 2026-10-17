@@ -4,7 +4,7 @@
 
 **The vocabulary is small, sparse and dominated by function words.** The document-term matrix has 813 documents, 4,313 terms and 99.5249% sparsity (`build_dtm_8`). The most frequent terms are generic words such as "the", "to", "and", "is" and "it" (`term_frequency_9`), and the variance chart shows the same thing: the top 20 terms by variance are all stop words, with "the" far above the rest (`variance_filter_11`) 
 
-![Variance filter result](../plots/FILENAME_VARIANCE.png). 
+![Variance filter result](../plots/林槱松_homework_plot_turn86.png). 
 
 A variance threshold of 0.01 kept 490 and removed 3,823 terms, so it removes rare words but not stop words, because their counts vary a lot between comments. This is a property of the raw-count representation, not a tool error.
 
